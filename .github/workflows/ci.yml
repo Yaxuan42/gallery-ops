@@ -17,9 +17,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      - name: Generate Prisma Client
+        run: npx prisma generate
       - name: Type check
         run: npx tsc --noEmit
       - name: Lint (oxlint)
@@ -33,9 +35,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      - name: Generate Prisma Client
+        run: npx prisma generate
       - name: Run tests
         run: npm test
 
@@ -43,13 +47,19 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     needs: check
+    env:
+      DATABASE_URL: file:./prisma/gallery.db
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      - name: Generate Prisma Client
+        run: npx prisma generate
+      - name: Create database
+        run: npx prisma migrate deploy
       - name: Build production
         run: npm run build
 
