@@ -47,6 +47,8 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     needs: check
+    env:
+      DATABASE_URL: file:./prisma/gallery.db
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -56,6 +58,8 @@ jobs:
       - run: npm ci
       - name: Generate Prisma Client
         run: npx prisma generate
+      - name: Create database
+        run: npx prisma migrate deploy
       - name: Build production
         run: npm run build
 
