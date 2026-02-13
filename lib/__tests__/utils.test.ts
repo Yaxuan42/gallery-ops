@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { cn, formatRMB, formatUSD, calcTotalCost, generateSlug, generateOrderNumber, formatDate } from "@/lib/utils";
 
+// Branch protection test: this comment verifies that PRs require CI checks before merge.
+
 // ============ cn ============
 describe("cn", () => {
   it("merges simple class names", () => {
