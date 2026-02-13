@@ -1,0 +1,22 @@
+{
+  "$schema": "https://raw.githubusercontent.com/nicolo-ribaudo/oxlint/main/npm/oxlint/configuration_schema.json",
+  "rules": {
+    "no-unused-vars": "warn",
+    "no-console": "warn",
+    "eqeqeq": "error",
+    "no-var": "error",
+    "no-debugger": "error",
+    "no-empty": "warn",
+    "no-extra-boolean-cast": "error",
+    "no-constant-condition": "error",
+    "no-duplicate-case": "error",
+    "no-self-compare": "error",
+    "no-template-curly-in-string": "warn"
+  },
+  "ignorePatterns": [
+    "node_modules",
+    ".next",
+    "lib/generated",
+    "components/ui"
+  ]
+}

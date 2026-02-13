@@ -1,0 +1,7 @@
+.next/
+node_modules/
+lib/generated/
+prisma/migrations/
+public/uploads/
+*.db
+*.db-journal
