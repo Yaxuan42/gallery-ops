@@ -20,6 +20,8 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      - name: Generate Prisma Client
+        run: npx prisma generate
       - name: Type check
         run: npx tsc --noEmit
       - name: Lint (oxlint)
@@ -36,6 +38,8 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      - name: Generate Prisma Client
+        run: npx prisma generate
       - name: Run tests
         run: npm test
 
@@ -50,6 +54,8 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      - name: Generate Prisma Client
+        run: npx prisma generate
       - name: Build production
         run: npm run build
 
