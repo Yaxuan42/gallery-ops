@@ -9,12 +9,12 @@ export function cn(...inputs: ClassValue[]) {
 
 // Format currency
 export function formatRMB(amount: number | null | undefined): string {
-  if (amount == null) return "—";
+  if (amount === null || amount === undefined) return "—";
   return `¥${amount.toLocaleString("zh-CN", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 }
 
 export function formatUSD(amount: number | null | undefined): string {
-  if (amount == null) return "—";
+  if (amount === null || amount === undefined) return "—";
   return `$${amount.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 }
 
