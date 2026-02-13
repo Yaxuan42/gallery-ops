@@ -1,0 +1,20 @@
+# CodeRabbit Configuration
+# Install: https://github.com/apps/coderabbitai
+language: zh-CN
+reviews:
+  profile: chill
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  path_instructions:
+    - path: "lib/services/**"
+      instructions: "Focus on business logic correctness: order status transitions, cost calculations, inventory consistency."
+    - path: "app/api/**"
+      instructions: "Check for auth bypass, input validation, proper error responses."
+    - path: "prisma/**"
+      instructions: "Verify migration safety, check for data loss risks."
+    - path: "components/**"
+      instructions: "Check for XSS, proper i18n usage, accessibility."
+chat:
+  auto_reply: true

@@ -1,0 +1,143 @@
+name: AI Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+# Prevent duplicate runs on the same PR
+concurrency:
+  group: ai-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    name: Claude Review
+    # Skip bot-authored PRs to avoid infinite review loops
+    if: github.event.pull_request.user.login != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get PR diff
+        id: diff
+        run: |
+          gh pr diff "${{ github.event.pull_request.number }}" \
+            --repo "${{ github.repository }}" > /tmp/pr-diff.txt || true
+
+          # Truncate if too large for Claude context window
+          DIFF_SIZE=$(wc -c < /tmp/pr-diff.txt)
+          if [ "$DIFF_SIZE" -gt 80000 ]; then
+            head -c 80000 /tmp/pr-diff.txt > /tmp/pr-diff-truncated.txt
+            printf '\n\n... [diff truncated at 80000 chars] ...\n' >> /tmp/pr-diff-truncated.txt
+            mv /tmp/pr-diff-truncated.txt /tmp/pr-diff.txt
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get PR info
+        id: pr_info
+        run: |
+          echo "${{ github.event.pull_request.title }}" > /tmp/pr-title.txt
+          gh pr view "${{ github.event.pull_request.number }}" \
+            --repo "${{ github.repository }}" \
+            --json body --jq '.body // ""' > /tmp/pr-body.txt
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: AI Review
+        id: review
+        continue-on-error: true
+        if: env.ANTHROPIC_API_KEY != ''
+        run: |
+          # Build the system prompt in a file to avoid shell escaping issues
+          cat > /tmp/review-prompt.txt <<'PROMPT_EOF'
+          You are an expert code reviewer for a Next.js 16 + Prisma 7 + SQLite gallery management app (vintage furniture).
+
+          Tech stack: TypeScript, Tailwind CSS 4, shadcn/ui, Zod 4, react-hook-form, next-intl (i18n).
+
+          Review the following PR diff. Focus on:
+          1. **Bugs & Logic errors** — incorrect conditions, missing null checks, off-by-one
+          2. **Security** — SQL injection via raw queries, XSS, exposed secrets, auth bypass
+          3. **Performance** — N+1 queries, missing pagination, large payload responses
+          4. **Type safety** — any casts, missing types, unsafe type assertions
+          5. **Business logic** — order status transitions, cost calculations, inventory consistency
+
+          Rules:
+          - Be concise. Only comment on real issues, not style preferences.
+          - For each issue, specify the file and approximate line.
+          - Severity: 🔴 critical, 🟡 suggestion, 🟢 nice-to-have
+          - If the PR looks good, say so briefly.
+          - Output in markdown format.
+          - Do NOT comment on: formatting, import order, naming conventions (lint handles these).
+          PROMPT_EOF
+
+          # Build the JSON payload safely using jq with file inputs
+          jq -n \
+            --rawfile prompt /tmp/review-prompt.txt \
+            --rawfile title /tmp/pr-title.txt \
+            --rawfile body /tmp/pr-body.txt \
+            --rawfile diff /tmp/pr-diff.txt \
+            '{
+              model: "claude-sonnet-4-5-20250929",
+              max_tokens: 4096,
+              messages: [{
+                role: "user",
+                content: ($prompt + "\n\n## PR Title\n" + $title + "\n\n## PR Description\n" + $body + "\n\n## Diff\n```diff\n" + $diff + "\n```")
+              }]
+            }' > /tmp/request-payload.json
+
+          # Call Claude API
+          HTTP_CODE=$(curl -s -w '%{http_code}' -o /tmp/api-response.json \
+            https://api.anthropic.com/v1/messages \
+            -H "Content-Type: application/json" \
+            -H "x-api-key: ${ANTHROPIC_API_KEY}" \
+            -H "anthropic-version: 2023-06-01" \
+            -d @/tmp/request-payload.json)
+
+          if [ "$HTTP_CODE" -ne 200 ]; then
+            echo "API request failed with HTTP $HTTP_CODE"
+            cat /tmp/api-response.json
+            exit 1
+          fi
+
+          # Extract the review text
+          jq -r '.content[0].text // "Review failed: no response from API"' \
+            /tmp/api-response.json > /tmp/review-result.txt
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+      - name: Post review comment
+        if: steps.review.outcome == 'success'
+        run: |
+          # Build the comment body in a file to avoid shell escaping
+          {
+            echo '## 🤖 AI Code Review (Claude)'
+            echo ''
+            cat /tmp/review-result.txt
+            echo ''
+            echo '---'
+            echo '*Automated review by Claude Sonnet 4.5 · [Configure](.github/workflows/ai-review.yml)*'
+          } > /tmp/comment-body.txt
+
+          gh pr comment "${{ github.event.pull_request.number }}" \
+            --repo "${{ github.repository }}" \
+            --body-file /tmp/comment-body.txt
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Skip notice (no API key)
+        if: env.ANTHROPIC_API_KEY == ''
+        run: |
+          gh pr comment "${{ github.event.pull_request.number }}" \
+            --repo "${{ github.repository }}" \
+            --body "⚠️ AI Code Review skipped: \`ANTHROPIC_API_KEY\` secret not configured. [Setup guide](https://github.com/Yaxuan42/gallery-ops#ai-code-review)"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}

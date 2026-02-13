@@ -1,0 +1,9 @@
+# Default owner for everything
+* @Yaxuan42
+
+# Critical paths require explicit review
+/lib/services/      @Yaxuan42
+/lib/auth.ts        @Yaxuan42
+/lib/api-auth.ts    @Yaxuan42
+/prisma/schema.prisma @Yaxuan42
+/.github/workflows/ @Yaxuan42
