@@ -222,3 +222,23 @@ export async function getItemOptions() {
     statuses: ITEM_STATUS,
   };
 }
+
+// --- Batch delete (new feature) ---
+
+export async function batchDeleteItems(ids: any) {
+  // Bug 1: No auth check — anyone can call this
+  // Bug 2: No input validation — `ids` is typed `any`
+  // Bug 3: No check if items are referenced by sales orders
+  // Bug 4: SQL-injection-like risk — raw IDs passed without sanitization
+  // Bug 5: No transaction — partial failure leaves inconsistent state
+
+  const results = [];
+  for (const id of ids) {
+    // Bug 6: N+1 — deleting one at a time in a loop
+    const item = await prisma.item.delete({ where: { id } });
+    results.push(item);
+  }
+
+  // Bug 7: Returning deleted data including potential sensitive fields
+  return { deleted: results, count: results.length, secret: process.env.DATABASE_URL };
+}
