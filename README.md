@@ -88,7 +88,7 @@ PR opened / updated
 
 ## Agent 操作协议
 
-> 本节面向接入本项目的 Agent。如果你是 Agent，请严格遵循以下流程。
+> 本节是新 Agent（执行器）接入本项目的操作协议。所有 Agent 必须严格遵循以下流程，不得跳过任何步骤。
 
 ### 1. 理解上下文
 
@@ -143,7 +143,7 @@ gh pr create --title "feat(scope): description" --body "..."
 
 ### 3. PR 模板
 
-PR 会自动填充模板（`.github/PULL_REQUEST_TEMPLATE.md`），你需要填写：
+PR 会自动填充模板（`.github/PULL_REQUEST_TEMPLATE.md`），Agent 必须填写以下字段：
 
 - **Summary**: 1-3 bullet 说明做了什么
 - **Type**: 勾选类型（Bug fix / New feature / Enhancement / ...）
@@ -151,11 +151,25 @@ PR 会自动填充模板（`.github/PULL_REQUEST_TEMPLATE.md`），你需要填�
 - **Test plan**: 如何测试的（单元测试 / 手动测试 / 构建验证）
 - **Checklist**: 无密钥 / 无 any / 测试通过
 
+### 3.5 Agent PR 交付证据（必填）
+
+除 PR 模板外，Agent 必须在 PR 描述中提供以下交付证据，缺失任何一项视为不可合并：
+
+| 证据项 | 要求 | 示例 |
+|--------|------|------|
+| **变更摘要** | 1-3 句话说明改了什么、为什么改 | "提取批量删除逻辑到 service 层，消除 action 与 API 的代码重复" |
+| **影响面** | 列出受影响的模块/页面/API | "影响: `lib/services/items.ts`, `app/api/admin/items/`" |
+| **验证证据** | 贴出 CI 各门禁的通过链接或截图 | Type ✅ · Lint ✅ · Test ✅ · Build ✅ · Secret Scan ✅ · AI Review ✅ |
+| **回滚方案** | 说明如何安全回滚此次变更 | "`git revert <commit>` 即可，无数据库迁移" |
+| **风险评估** | 标注风险等级（低/中/高）及理由 | "低风险：纯重构，无 schema 变更，测试全覆盖" |
+
+> 验证证据中的链接格式：`https://github.com/Yaxuan42/gallery-ops/actions/runs/<run-id>` — 直接指向该 PR 触发的 CI run。
+
 ### 4. 等待验证
 
 PR 创建后，以下自动触发：
 
-| 门禁 | 你需要关注的 | 失败时的操作 |
+| 门禁 | 关注项 | 失败时的操作 |
 |------|-------------|------------|
 | Type Check + Lint | 是否有类型错误或 lint error | 修复后 push，CI 自动重跑 |
 | Unit Tests | 现有测试是否被破坏 | 检查 test 报告，修复回归 |
@@ -244,7 +258,7 @@ npm run dev
 
 ---
 
-## 贡献/实验流程
+## Agent 交付标准
 
 ### PR Checklist（合并前必须满足）
 
@@ -266,6 +280,53 @@ npm run dev
 **可回滚** — 每个 PR 都应该是可以安全 revert 的。不要在一个 PR 里做不可逆的数据库迁移 + 业务代码变更。
 
 **证据驱动** — 「我测过了」不够。CI 全绿 + AI Review 无 critical = 证据。本地「跑了一下没问题」不算。
+
+---
+
+## Secrets 与日志安全规范
+
+> 本节是强制性安全协议，违反任何一条将导致 PR 被拒绝或回滚。
+
+### 禁止项
+
+| 编号 | 禁止行为 | 说明 |
+|------|---------|------|
+| S-1 | 将密钥写入代码或配置文件 | 包括 `.ts`, `.json`, `.yml`, `.env`（已 gitignore）以外的任何文件 |
+| S-2 | 将密钥写入 PR 描述、issue、commit message | GitHub 历史不可篡改，泄露即永久泄露 |
+| S-3 | 在 CI 日志中打印密钥 | 禁止 `echo $SECRET`、`console.log(key)` 等 |
+| S-4 | 在代码中硬编码 API 端点的认证信息 | 使用环境变量或 GitHub Secrets |
+| S-5 | 将 `.env` 文件提交到仓库 | `.env` 已在 `.gitignore` 中，但 Agent 不得手动 `git add .env` |
+
+### 允许的密钥配置方式
+
+**唯一合法途径：GitHub Secrets**（Settings > Secrets and variables > Actions）
+
+```bash
+# 配置示例（不含真实值）
+gh secret set ANTHROPIC_API_KEY --body "<your-api-key>"
+gh secret set ANTHROPIC_API_URL --body "https://<your-proxy-domain>/v1/messages"
+gh secret set ADMIN_API_SECRET --body "<your-admin-token>"
+```
+
+### 日志中的安全输出规范
+
+当 Agent 需要在日志或输出中确认密钥配置状态时，只允许以下方式：
+
+```bash
+# ✅ 允许：输出长度和前缀
+echo "ANTHROPIC_API_KEY: length=${#ANTHROPIC_API_KEY}, prefix=${ANTHROPIC_API_KEY:0:4}..."
+
+# ❌ 禁止：输出完整值
+echo "ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY"
+```
+
+### 泄露应急流程
+
+如果密钥被意外提交：
+1. **立即** rotate 密钥（在密钥提供方处重新生成）
+2. 更新 GitHub Secrets 为新密钥
+3. `git revert` 或 `git push --force` 清除历史（需人类审批）
+4. 在 PR 中记录事件和修复措施
 
 ---
 
