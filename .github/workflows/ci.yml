@@ -74,7 +74,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: nextjs-build
-          path: .next/
+          path: |
+            .next/
+            !.next/cache/
           retention-days: 3
         continue-on-error: true
 
