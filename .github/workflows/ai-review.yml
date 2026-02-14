@@ -93,9 +93,10 @@ jobs:
               }]
             }' > /tmp/request-payload.json
 
-          # Call Claude API
+          # Call Claude API (supports custom proxy via ANTHROPIC_API_URL)
+          API_URL="${ANTHROPIC_API_URL:-https://api.anthropic.com/v1/messages}"
           HTTP_CODE=$(curl -s -w '%{http_code}' -o /tmp/api-response.json \
-            https://api.anthropic.com/v1/messages \
+            "$API_URL" \
             -H "Content-Type: application/json" \
             -H "x-api-key: ${ANTHROPIC_API_KEY}" \
             -H "anthropic-version: 2023-06-01" \
@@ -112,6 +113,7 @@ jobs:
             /tmp/api-response.json > /tmp/review-result.txt
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_API_URL: ${{ secrets.ANTHROPIC_API_URL }}
 
       - name: Post review comment
         if: steps.review.outcome == 'success'
