@@ -42,6 +42,14 @@ jobs:
         run: npx prisma generate
       - name: Run tests
         run: npm test
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: coverage/
+          retention-days: 7
+        continue-on-error: true
 
   build:
     name: Build
@@ -62,6 +70,13 @@ jobs:
         run: npx prisma migrate deploy
       - name: Build production
         run: npm run build
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nextjs-build
+          path: .next/
+          retention-days: 3
+        continue-on-error: true
 
   secrets:
     name: Secret Scan
@@ -70,7 +85,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: "3.12"
       - name: Install detect-secrets
         run: pip install detect-secrets
       - name: Scan for secrets

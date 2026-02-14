@@ -1,0 +1,33 @@
+version: 2
+
+updates:
+  # npm dependencies
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Asia/Shanghai
+    open-pull-requests-limit: 10
+    reviewers:
+      - Yaxuan42
+    labels:
+      - "dependencies"
+    # Group minor/patch updates to reduce PR noise
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+    # Security updates always get individual PRs (default behavior)
+
+  # GitHub Actions versions
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    labels:
+      - "dependencies"
+      - "scope: ci"

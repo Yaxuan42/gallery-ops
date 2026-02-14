@@ -1,0 +1,54 @@
+# Scope labels — used by actions/labeler to auto-tag PRs by changed paths
+"scope: api":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "lib/services/**"
+          - "lib/actions/**"
+          - "app/api/**"
+          - "lib/validations.ts"
+
+"scope: web":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "app/(web)/**"
+          - "components/web/**"
+          - "messages/**"
+
+"scope: admin":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "app/(admin)/**"
+          - "components/admin/**"
+
+"scope: database":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "prisma/**"
+
+"scope: ci":
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".github/**"
+          - ".nvmrc"
+          - ".oxlintrc.json"
+          - ".secrets.baseline"
+
+"scope: ui":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "components/ui/**"
+          - "app/globals.css"
+
+"scope: tests":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "lib/__tests__/**"
+          - "vitest.config.ts"
+
+"scope: config":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "package.json"
+          - "tsconfig.json"
+          - "next.config.ts"
+          - "tailwind.config.*"
