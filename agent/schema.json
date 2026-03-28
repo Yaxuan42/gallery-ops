@@ -1,0 +1,192 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "JIUDI Data Schema",
+  "description": "旧地数字合伙人数据模型 v1 — 与 agent-design.md TypeScript 定义保持一致",
+
+  "$defs": {
+
+    "product": {
+      "description": "SPU — 产品类型",
+      "type": "object",
+      "required": ["id", "name", "category"],
+      "properties": {
+        "id":                 { "type": "string", "description": "型号即 ID，如 PJ-SI-59-A" },
+        "name":               { "type": "string", "description": "英文产品名" },
+        "nickname":           { "type": ["string", "null"], "description": "中文俗称" },
+        "category":           { "type": "string", "description": "品类" },
+        "designer":           { "type": ["string", "null"] },
+        "origin":             { "type": ["string", "null"] },
+        "design_year":        { "type": ["string", "null"] },
+        "materials":          { "type": "array", "items": { "type": "string" } },
+        "description":        { "type": ["string", "null"], "description": "面向用户的一段话介绍" },
+        "design_story":       { "type": ["string", "null"], "description": "设计语言与命名由来" },
+        "historical_context": { "type": ["string", "null"], "description": "历史背景" },
+        "extra":              { "type": "object", "additionalProperties": true },
+        "created_at":         { "type": "string", "format": "date-time" },
+        "updated_at":         { "type": "string", "format": "date-time" }
+      }
+    },
+
+    "item": {
+      "description": "SKU — 具体藏品",
+      "type": "object",
+      "required": ["id", "product_id", "status"],
+      "properties": {
+        "id":              { "type": "string", "pattern": "^JD-\\d{3}$" },
+        "product_id":      { "type": "string", "description": "→ Product.id" },
+        "production_year": { "type": ["string", "null"] },
+        "condition":       { "type": ["string", "null"], "enum": [null, "A", "B", "C", "D"] },
+        "dimensions":      { "type": ["string", "null"] },
+        "pricing": {
+          "type": "object",
+          "properties": {
+            "retail":      { "type": ["number", "null"], "description": "定价 CNY" },
+            "acquisition": { "type": ["number", "null"], "description": "买手价 CNY ⚠️ 敏感" },
+            "reference":   { "type": ["string", "null"], "description": "参考公价（自由格式）" }
+          }
+        },
+        "provenance": {
+          "type": "object",
+          "properties": {
+            "institution":    { "type": ["string", "null"] },
+            "region":         { "type": ["string", "null"] },
+            "previous_owner": { "type": ["string", "null"] }
+          }
+        },
+        "status":       { "type": "string", "enum": ["在库", "在展", "在途", "已售", "预定"] },
+        "location":     { "type": ["string", "null"] },
+        "photos":       { "type": "array", "items": { "type": "string" } },
+        "notes":        { "type": ["string", "null"] },
+        "purchase_id":  { "type": ["string", "null"], "description": "→ Purchase.id" },
+        "sale_id":      { "type": ["string", "null"], "description": "→ Sale.id" },
+        "created_at":   { "type": "string", "format": "date-time" },
+        "updated_at":   { "type": "string", "format": "date-time" }
+      }
+    },
+
+    "customer": {
+      "description": "客户",
+      "type": "object",
+      "required": ["id", "name"],
+      "properties": {
+        "id":           { "type": "string", "pattern": "^C-\\d{3}$" },
+        "name":         { "type": "string" },
+        "contact":      { "type": ["string", "null"] },
+        "type":         { "type": "string", "enum": ["个人", "商业空间", "画廊", "机构"] },
+        "source":       { "type": ["string", "null"] },
+        "interests":    { "type": "array", "items": { "type": "string" } },
+        "budget_range": { "type": ["string", "null"] },
+        "interactions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "date":    { "type": "string" },
+              "summary": { "type": "string" }
+            }
+          }
+        },
+        "notes":      { "type": ["string", "null"] },
+        "created_at": { "type": "string", "format": "date-time" },
+        "updated_at": { "type": "string", "format": "date-time" }
+      }
+    },
+
+    "supplier": {
+      "description": "供应商",
+      "type": "object",
+      "required": ["id", "name"],
+      "properties": {
+        "id":         { "type": "string", "pattern": "^SUP-\\d{3}$" },
+        "name":       { "type": "string" },
+        "contact":    { "type": ["string", "null"] },
+        "region":     { "type": ["string", "null"] },
+        "notes":      { "type": ["string", "null"] },
+        "created_at": { "type": "string", "format": "date-time" }
+      }
+    },
+
+    "sale": {
+      "description": "销售单",
+      "type": "object",
+      "required": ["id", "customer_id", "item_ids", "amount"],
+      "properties": {
+        "id":             { "type": "string", "pattern": "^SO-\\d{8}-\\d{3}$" },
+        "date":           { "type": "string" },
+        "customer_id":    { "type": "string", "description": "→ Customer.id" },
+        "item_ids":       { "type": "array", "items": { "type": "string" }, "description": "→ Item.id[]" },
+        "amount":         { "type": "number" },
+        "currency":       { "type": "string", "enum": ["CNY", "USD"] },
+        "payment_status": { "type": "string", "enum": ["待付", "部分付", "已付"] },
+        "gross_profit":   { "type": ["number", "null"] },
+        "notes":          { "type": ["string", "null"] },
+        "created_at":     { "type": "string", "format": "date-time" }
+      }
+    },
+
+    "purchase": {
+      "description": "采购单",
+      "type": "object",
+      "required": ["id", "supplier_id", "item_ids"],
+      "properties": {
+        "id":             { "type": "string", "pattern": "^PO-\\d{8}-\\d{3}$" },
+        "date":           { "type": "string" },
+        "supplier_id":    { "type": "string", "description": "→ Supplier.id" },
+        "item_ids":       { "type": "array", "items": { "type": "string" }, "description": "→ Item.id[]" },
+        "cost": {
+          "type": "object",
+          "properties": {
+            "goods":    { "type": "number" },
+            "shipping": { "type": ["number", "null"] },
+            "customs":  { "type": ["number", "null"] },
+            "other":    { "type": ["number", "null"] },
+            "total":    { "type": "number" }
+          }
+        },
+        "currency":       { "type": "string", "enum": ["CNY", "USD"] },
+        "exchange_rate":  { "type": ["number", "null"] },
+        "payment_status": { "type": "string", "enum": ["待付", "部分付", "已付"] },
+        "notes":          { "type": ["string", "null"] },
+        "created_at":     { "type": "string", "format": "date-time" }
+      }
+    },
+
+    "exhibition": {
+      "description": "展览",
+      "type": "object",
+      "required": ["id", "title"],
+      "properties": {
+        "id":          { "type": "string", "pattern": "^EX-\\d{3}$" },
+        "title":       { "type": "string" },
+        "date_start":  { "type": ["string", "null"] },
+        "date_end":    { "type": ["string", "null"] },
+        "venue":       { "type": ["string", "null"] },
+        "status":      { "type": "string", "enum": ["筹备中", "进行中", "已结束"] },
+        "item_ids":    { "type": "array", "items": { "type": "string" } },
+        "description": { "type": ["string", "null"] },
+        "notes":       { "type": ["string", "null"] },
+        "created_at":  { "type": "string", "format": "date-time" },
+        "updated_at":  { "type": "string", "format": "date-time" }
+      }
+    },
+
+    "condition_report": {
+      "description": "品相报告",
+      "type": "object",
+      "required": ["id", "item_id", "grade"],
+      "properties": {
+        "id":             { "type": "string", "pattern": "^CR-\\d{3}$" },
+        "item_id":        { "type": "string", "description": "→ Item.id" },
+        "date":           { "type": "string" },
+        "grade":          { "type": "string", "enum": ["A", "B", "C", "D"] },
+        "structure":      { "type": ["string", "null"] },
+        "surface":        { "type": ["string", "null"] },
+        "cane":           { "type": ["string", "null"] },
+        "damage":         { "type": ["string", "null"] },
+        "photos":         { "type": "array", "items": { "type": "string" } },
+        "recommendation": { "type": ["string", "null"] },
+        "created_at":     { "type": "string", "format": "date-time" }
+      }
+    }
+  }
+}
