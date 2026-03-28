@@ -1,8 +1,10 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { ContactForm } from "@/components/web/contact/contact-form";
-import { Suspense } from "react";
+import { ContactFormWrapper } from "@/components/web/contact/contact-form-wrapper";
 import { MapPin, Phone, Mail, Clock } from "lucide-react";
 import type { Metadata } from "next";
+
+// Force dynamic page to avoid SSG issues with useSearchParams
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   params,
@@ -45,9 +47,7 @@ export default async function ContactPage({ params }: { params: Promise<{ locale
           <div className="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-20">
             {/* Left: Form */}
             <div>
-              <Suspense fallback={null}>
-                <ContactForm />
-              </Suspense>
+              <ContactFormWrapper />
             </div>
 
             {/* Right: Gallery Info */}

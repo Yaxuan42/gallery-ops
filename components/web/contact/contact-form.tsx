@@ -1,13 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 
 export function ContactForm() {
   const t = useTranslations("contact");
   const searchParams = useSearchParams();
-  const itemFromUrl = searchParams.get("item");
+  const [itemFromUrl, setItemFromUrl] = useState<string>("");
+
+  useEffect(() => {
+    // Only access search params on client side
+    const item = searchParams.get("item");
+    if (item) {
+      setItemFromUrl(item);
+    }
+  }, [searchParams]);
 
   const [formData, setFormData] = useState({
     name: "",
